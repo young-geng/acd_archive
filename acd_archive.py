@@ -45,19 +45,19 @@ def SigKillHandler(signum, frame):
 
 
 def GenerateZipFileName(dir_name, name):
-    filename = name + datetime.datetime.now().strftime('__%Y_%m_%d__%H_%M_%S.7z')
+    filename = name + datetime.datetime.now().strftime('.%Y_%m_%d__%H_%M_%S.7z')
     return os.path.join(dir_name, filename)
 
 
 def ZipFile(input_path, output_path):
     args = ['7za', 'a', '-t7z', output_path, input_path]
-    if subprocess.call(args, shell=False) != 0:
+    if subprocess.call(args, stdout=subprocess.PIPE) != 0:
         raise Exception('Cannot create 7zip archive')
 
 
 def AcdSync():
     args = ['acdcli', 'sync']
-    if subprocess.call(args, shell=False) != 0:
+    if subprocess.call(args, stdout=subprocess.PIPE) != 0:
         raise Exception('Cannot sync with Amazon cloud drive')
 
 
@@ -85,7 +85,6 @@ if __name__ == '__main__':
     AcdSync()
 
     with TempDir() as temp_dir:
-        print temp_dir
         output_path = GenerateZipFileName(temp_dir.path, name)
         ZipFile(input_path, output_path)
         UploadFile(output_path)
