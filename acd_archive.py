@@ -51,7 +51,7 @@ def GenerateZipFileName(dir_name, name):
 
 def ZipFile(input_path, output_path):
     args = ['7za', 'a', '-t7z', output_path, input_path]
-    if subprocess.call(args, stdout=subprocess.PIPE) != 0:
+    if subprocess.call(args) != 0:
         raise Exception('Cannot create 7zip archive')
 
 
