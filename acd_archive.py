@@ -6,6 +6,7 @@ import shutil
 import sys
 import signal
 import datetime
+import re
 
 
 TEMP_FOLDER = '/temp/acd_archive'
@@ -67,14 +68,19 @@ def UploadFile(path):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print 'Wrong argument!'
+    if len(sys.argv) != 2 and len(sys.argv) != 3:
+        print 'Invalid argument!'
+        print 'Usage: python acd_archive.py input_file [output_name]'
         sys.exit(1)
 
     signal.signal(signal.SIGINT, SigKillHandler)
 
     input_path = sys.argv[1]
-    name = sys.argv[2]
+
+    if len(sys.argv) == 3:
+        name = sys.argv[2]
+    else:
+        name = re.findall('/*([^/]+)/*$', input_path)[0]
 
     AcdSync()
 
