@@ -45,8 +45,11 @@ def SigKillHandler(signum, frame):
     raise Exception('interrupted')
 
 
-def GenerateZipFileName(dir_name, name):
-    filename = name + datetime.datetime.now().strftime('.%Y_%m_%d__%H_%M_%S.7z')
+def GenerateZipFileName(dir_name, name, no_prefix=False):
+    if no_prefix:
+        filename = name + '.7z'
+    else:
+        filename = name + datetime.datetime.now().strftime('.%Y_%m_%d__%H_%M_%S.7z')
     return os.path.join(dir_name, filename)
 
 
@@ -76,6 +79,8 @@ if __name__ == '__main__':
                        help='file path to archive')
     parser.add_argument('--name', type=str, help='prefix name for archived file')
     parser.add_argument('--dest', type=str, default=ARCHIVE_HOME, help='destination dir')
+    parser.add_argument('--no_prefix', action='store_true',
+                        help='disable auto prefix for archive name')
 
     args = parser.parse_args()
 
@@ -91,7 +96,7 @@ if __name__ == '__main__':
     AcdSync()
 
     with TempDir() as temp_dir:
-        output_path = GenerateZipFileName(temp_dir.path, name)
+        output_path = GenerateZipFileName(temp_dir.path, name, args.no_prefix)
         ZipFile(input_path, output_path)
         UploadFile(output_path, args.dest)
 
