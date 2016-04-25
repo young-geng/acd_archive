@@ -65,10 +65,12 @@ def AcdSync():
         raise Exception('Cannot sync with Amazon cloud drive')
 
 
-def UploadFile(path, dest_path):
+def UploadFile(path, dest_path, n_retry=5):
     args = ['acdcli', 'upload', path, dest_path]
-    if subprocess.call(args, shell=False) != 0:
-        raise Exception('Cannot upload file')
+    for _ in xrange(n_retry):
+        if subprocess.call(args, shell=False) == 0:
+            return
+    raise Exception('Cannot upload file')
 
 
 if __name__ == '__main__':
@@ -79,6 +81,7 @@ if __name__ == '__main__':
                        help='file path to archive')
     parser.add_argument('--name', type=str, help='prefix name for archived file')
     parser.add_argument('--dest', type=str, default=ARCHIVE_HOME, help='destination dir')
+    parser.add_argument('--retry', type=int, default=5, help='number of times to retry uploading')
     parser.add_argument('--no_prefix', action='store_true',
                         help='disable auto prefix for archive name')
 
@@ -98,7 +101,7 @@ if __name__ == '__main__':
     with TempDir() as temp_dir:
         output_path = GenerateZipFileName(temp_dir.path, name, args.no_prefix)
         ZipFile(input_path, output_path)
-        UploadFile(output_path, args.dest)
+        UploadFile(output_path, args.dest, args.retry)
 
 
 
