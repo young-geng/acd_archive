@@ -4,7 +4,6 @@ import os.path
 import tempfile
 import shutil
 import sys
-import signal
 import datetime
 import re
 import argparse
@@ -39,10 +38,6 @@ class TempDir(object):
     def path(self):
         return self._dir
 
-
-def SigKillHandler(signum, frame):
-    print 'Archive process interrupted with signal {}'.format(signum)
-    raise Exception('interrupted')
 
 
 def GenerateZipFileName(dir_name, name, no_prefix=False):
@@ -87,7 +82,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    signal.signal(signal.SIGINT, SigKillHandler)
 
     input_path = args.path
 
@@ -99,9 +93,13 @@ if __name__ == '__main__':
     AcdSync()
 
     with TempDir() as temp_dir:
-        output_path = GenerateZipFileName(temp_dir.path, name, args.no_prefix)
-        ZipFile(input_path, output_path)
-        UploadFile(output_path, args.dest, args.retry)
+        try:
+            output_path = GenerateZipFileName(temp_dir.path, name, args.no_prefix)
+            ZipFile(input_path, output_path)
+            UploadFile(output_path, args.dest, args.retry)
+        except:
+            # We need to clean up the temp dir in case of any exceptions.
+            pass
 
 
 
