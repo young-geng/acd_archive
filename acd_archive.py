@@ -67,7 +67,8 @@ class RCloneBackend(CloudStorageBackend):
 
     def upload(self, path, dest_path, n_retry=5):
         dest_path = '{}:{}'.format(self._remote, dest_path)
-        args = ['rclone', 'copy', path, dest_path]
+        args = ['rclone', 'copy', path, dest_path, '--stats=1s']
+        print args
         for _ in xrange(n_retry):
             if subprocess.call(args, shell=False) == 0:
                 return
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                        help='file path to archive')
     parser.add_argument('-f', '--name', type=str, help='prefix name for archived file')
     parser.add_argument('-d', '--dest', type=str, default=ARCHIVE_HOME, help='destination dir')
-    parser.add_argument('--retry', type=int, default=5, help='number of times to retry uploading')
+    parser.add_argument('--retry', type=int, default=1, help='number of times to retry uploading')
     parser.add_argument('--no_date', action='store_true',
                         help='disable auto prefix for archive name')
     parser.add_argument('-b', '--backend', type=str, default='rclone', help='destination dir')
