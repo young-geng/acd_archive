@@ -39,6 +39,40 @@ class TempDir(object):
         return self._dir
 
 
+class CloudStorageBackend(object):
+    """ Storage backend base class. """
+    def upload(self, path, dest_path, n_retry):
+        raise NotImplementedError
+
+
+class AcdCliBackend(CloudStorageBackend):
+    """ Storage backend using acd_cli. """
+    def __init__(self):
+        args = ['acdcli', 'sync']
+        if subprocess.call(args, stdout=subprocess.PIPE) != 0:
+            raise Exception('Cannot sync with Amazon cloud drive')
+
+    def upload(self, path, dest_path, n_retry=5):
+        args = ['acdcli', 'upload', path, dest_path]
+        for _ in xrange(n_retry):
+            if subprocess.call(args, shell=False) == 0:
+                return
+        raise Exception('Cannot upload file')
+
+
+class RCloneBackend(CloudStorageBackend):
+
+    def __init__(self):
+        self._remote = 'acd'
+
+    def upload(self, path, dest_path, n_retry=5):
+        dest_path = '{}:{}'.format(self._remote, dest_path)
+        args = ['rclone', 'copy', path, dest_path]
+        for _ in xrange(n_retry):
+            if subprocess.call(args, shell=False) == 0:
+                return
+        raise Exception('Cannot upload file')
+
 
 def GenerateZipFileName(dir_name, name, no_prefix=False):
     if no_prefix:
@@ -54,34 +88,20 @@ def ZipFile(input_path, output_path):
         raise Exception('Cannot create 7zip archive')
 
 
-def AcdSync():
-    args = ['acdcli', 'sync']
-    if subprocess.call(args, stdout=subprocess.PIPE) != 0:
-        raise Exception('Cannot sync with Amazon cloud drive')
-
-
-def UploadFile(path, dest_path, n_retry=5):
-    args = ['acdcli', 'upload', path, dest_path]
-    for _ in xrange(n_retry):
-        if subprocess.call(args, shell=False) == 0:
-            return
-    raise Exception('Cannot upload file')
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Process some integers.')
 
     parser.add_argument('path', metavar='path', type=str,
                        help='file path to archive')
-    parser.add_argument('--name', type=str, help='prefix name for archived file')
-    parser.add_argument('--dest', type=str, default=ARCHIVE_HOME, help='destination dir')
+    parser.add_argument('-f', '--name', type=str, help='prefix name for archived file')
+    parser.add_argument('-d', '--dest', type=str, default=ARCHIVE_HOME, help='destination dir')
     parser.add_argument('--retry', type=int, default=5, help='number of times to retry uploading')
-    parser.add_argument('--no_prefix', action='store_true',
+    parser.add_argument('--no_date', action='store_true',
                         help='disable auto prefix for archive name')
+    parser.add_argument('-b', '--backend', type=str, default='rclone', help='destination dir')
 
     args = parser.parse_args()
-
 
     input_path = args.path
 
@@ -90,28 +110,19 @@ if __name__ == '__main__':
     else:
         name = re.findall('/*([^/]+)/*$', input_path)[0]
 
-    AcdSync()
+    if args.backend == 'acdcli':
+        backend = AcdCliBackend()
+    elif args.backend == 'rclone':
+        backend = RCloneBackend()
+    else:
+        raise NotImplementedError('Unsupported backend!')
 
     with TempDir() as temp_dir:
         try:
-            output_path = GenerateZipFileName(temp_dir.path, name, args.no_prefix)
+            output_path = GenerateZipFileName(temp_dir.path, name, args.no_date)
             ZipFile(input_path, output_path)
-            UploadFile(output_path, args.dest, args.retry)
+            backend.upload(output_path, args.dest, args.retry)
         except:
+            print "Error!"
             # We need to clean up the temp dir in case of any exceptions.
             pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
