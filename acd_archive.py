@@ -14,7 +14,6 @@ TEMP_FOLDER = '/temp/acd_archive'
 ARCHIVE_HOME = '/AutoArchive'
 
 
-
 class TempDir(object):
 
     def __init__(self):
@@ -76,6 +75,10 @@ class RCloneBackend(CloudStorageBackend):
         raise Exception('Cannot upload file')
 
 
+def NumThreads():
+    return min(cpu_count(), 8)
+
+
 def GenerateZipFileName(dir_name, name, no_prefix=False):
     if no_prefix:
         filename = name + '.7z'
@@ -85,7 +88,7 @@ def GenerateZipFileName(dir_name, name, no_prefix=False):
 
 
 def ZipFile(input_path, output_path):
-    args = ['7za', 'a', '-m0=lzma2', '-mmt={}'.format(cpu_count()), '-mx9', '-t7z', output_path, input_path]
+    args = ['7za', 'a', '-m0=lzma2', '-mmt={}'.format(NumThreads()), '-mx9', '-t7z', output_path, input_path]
     if subprocess.call(args) != 0:
         raise Exception('Cannot create 7zip archive')
 
